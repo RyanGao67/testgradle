@@ -1,0 +1,100 @@
+/////////////////////////////////////////////////////////////////////////plugins
+plugins {
+    id 'java'
+}
+println 'Chapter 1: plugins'
+// plugins add new tasks and domain object to build
+import java.text.*
+/////////////////////////////////////////////////////////////////////////build
+println "\nChapter 2: java project"
+group 'com.shallowlightning'
+version '1.0-SNAPSHOT'
+repositories {
+    mavenCentral()
+}
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+println "Hello world"
+/////////////////////////////////////////////////////////////////////////groovy
+println "\nchapter 3: groovy+owner+this+delegate"
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
+System.out.println("Hello world now: " + sdf.format(new Date()))
+def oneArgMethod(c){
+    c()*2
+}
+println oneArgMethod {10}
+
+class Person {
+    String thename
+    Integer theage
+    Person(theName, theAge){
+        this.thename = theName
+        this.theage = theAge
+
+    }
+    def executeInside(Closure c){
+        c.delegate = this
+        c()
+    }
+}
+def p1 = new Person("Fred", 35)
+p1.executeInside{println thename}
+if( project.hasProperty('gradlePropertiesProp')){
+    println "The property file value is $gradlePropertiesProp"
+}
+
+
+/////////////////////////////////////////////////////////////////////////task
+println "\nchapter 4: tasks"
+defaultTasks 'doFinished'
+def temp = project.tasks
+println "show the project.tasks class: ${temp.getClass()}"
+println "these are the tasks: ${ project.tasks }"
+println "group is : ${project.group}"
+println "version is : ${project.version}"
+println "name is : ${name}"
+task doStartProcess {
+    doLast {
+        println "$name - Now starting the process - OK !"
+    }
+}
+
+task doStep2 {
+    doLast{
+        println "$name - Performed OK!"
+    }
+}
+
+task doSomethingInTheMiddle (
+        dependsOn: [
+                'doStartProcess',
+                tasks.findAll{task->task.name.startsWith('doStep2')}
+        ]
+) {
+    doLast {
+        println "$name - performed the middle step - OK!"
+    }
+}
+
+task doFinished{
+    doLast{
+        println "$name - Done -OK!"
+        println "$name - Done -OK! >>> version=$version"
+    }
+}
+
+if(Math.random() < 0.5){
+    doFinished.dependsOn doSomethingInTheMiddle, doStep2
+}
+
+project.gradle.taskGraph.whenReady {
+    taskGraph ->
+        if (taskGraph.hasTask(doStep2)){
+            project.version = '1.0'
+        }else{
+            project.version = '1.0-SNAPSHOT'
+        }
+    println "Now the testGraph is ready: $project.gradle.taskGraph.allTasks"
+}
